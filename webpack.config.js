@@ -4,20 +4,18 @@ var path = require('path');
 var webpack = require('webpack');
 
 var entries = [
-'./client/index.js' // entry point for the client app
-]
+  './client/index.js' // entry point for the client app
+];
 
 var plugins = [
-  new webpack.optimize.OccurenceOrderPlugin(),
-  new webpack.NoErrorsPlugin()
-]
+  new webpack.DefinePlugin({
+    'process.env': {
+      'NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+     }
+  }),
+];
 
-if(process.env.NODE_ENV === 'development') {
-  entries.push('webpack-hot-middleware/client')
-  plugins.push(new webpack.HotModuleReplacementPlugin())
-}
-
-module.exports = {
+var config = {
 
   devtool: '#inline-source-map',
 
@@ -49,7 +47,7 @@ module.exports = {
 		  exclude: /node_modules/,
 		  include: __dirname,
 		  query: {
-		    presets: [ 'react-hmre', "es2015", "stage-0", "react" ],
+		    presets: ["es2015", "stage-0", "react" ],
 		    plugins: [ "transform-decorators-legacy" ],
 		  }
 		},
@@ -60,3 +58,15 @@ module.exports = {
 	]
   }
 };
+
+// Hot mode
+if (process.env.NODE_ENV === 'development') {
+  config.plugins.unshift(new webpack.HotModuleReplacementPlugin());
+}
+
+if (process.env.NODE_ENV === 'production') {
+  config.plugins.push(new webpack.optimize.OccurrenceOrderPlugin());
+  config.plugins.push(new webpack.optimize.UglifyJsPlugin());
+}
+
+module.exports = config;
