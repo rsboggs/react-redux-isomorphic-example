@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "start2": "npm run build& npm run server",
-    "build": "webpack -d --progress",
+    "build": "webpack --progress --color -p --config webpack.config.js",
     "server": "node server.js",
     "postinstall": "npm run build"
   },
