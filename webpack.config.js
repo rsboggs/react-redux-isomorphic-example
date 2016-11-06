@@ -3,16 +3,26 @@
 var path = require('path');
 var webpack = require('webpack');
 
+var entries = [
+'./client/index.js' // entry point for the client app
+]
+
+var plugins = [
+  new webpack.optimize.OccurenceOrderPlugin(),
+  new webpack.NoErrorsPlugin()
+]
+
+if(process.env.NODE_ENV === 'development') {
+  entries.push('webpack-hot-middleware/client')
+  plugins.push(new webpack.HotModuleReplacementPlugin())
+}
+
 module.exports = {
 
   devtool: '#inline-source-map',
 
-  entry: [
-	'webpack-hot-middleware/client', // for hot reload
-	'./client/index.js' // entry point for the client app
-  ],
+  entry: entries,
 
-  //
   output: {
 	path: path.join(__dirname, 'build'),
 	filename: 'bundle.js',
@@ -20,11 +30,7 @@ module.exports = {
   },
 
   //
-  plugins: [
-	new webpack.optimize.OccurenceOrderPlugin(),
-	new webpack.HotModuleReplacementPlugin(),
-	new webpack.NoErrorsPlugin()
-  ],
+  plugins: plugins,
 
   //
   resolve: {
@@ -46,16 +52,6 @@ module.exports = {
 		    presets: [ 'react-hmre', "es2015", "stage-0", "react" ],
 		    plugins: [ "transform-decorators-legacy" ],
 		  }
-		  /*query: {
-		    "presets": [ "es2015", "stage-0", "react"],
-		    "plugins": [ "transform-decorators-legacy", 'react-transform'],
-			// 這裏就是直接貼上原本寫在 .babelrc 內的設定字串
-		    "env": {
-		  	  "development": {
-		  		"presets": ["react-hmre"]
-		  	  }
-		  	}
-		  }*/
 		},
 		{
 		  test: /\.css$/,

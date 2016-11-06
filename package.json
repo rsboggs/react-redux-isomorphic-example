@@ -4,7 +4,8 @@
   "description": "An isomorphic example built with react, redux and react-router, see readme for detailed instructions",
   "main": "dev.js",
   "scripts": {
-    "start": "node server/index.js",
+    "start-dev": "NODE_ENV=development node server/index.js",
+    "start": "NODE_ENV=production node server/index.js",
     "start2": "npm run build& npm run server",
     "build": "webpack --progress --color -p --config webpack.config.js",
     "server": "node server.js",
