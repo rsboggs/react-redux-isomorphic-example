@@ -1,30 +1,21 @@
-import fs from 'fs';
-import express from 'express';
-import path from 'path';
-
-import React from 'react'
+import express from 'express'
+import path from 'path'
 import { renderToString } from 'react-dom/server'
+import React from 'react'
+import { Router, RouterContext, match } from 'react-router'
+import { applyMiddleware, createStore } from 'redux'
+import { Provider } from 'react-redux'
+import routes from '../shared/routes/routing'
+import combinedReducers from '../shared/reducers'
+import fetchComponentData from '../shared/utils/fetchComponentData'
 
-import { Router, RouterContext, match } from 'react-router';
-import routes from '../common/routes/routing';
+const finalCreateStore = applyMiddleware()( createStore )
 
-import { applyMiddleware, createStore } from 'redux';
-import { Provider } from 'react-redux';
-
-import promiseMiddleware from '../common/middlewares/PromiseMiddleware';
-import combinedReducers from '../common/reducers';
-
-import fetchComponentData from '../common/utils/fetchComponentData';
-
-const finalCreateStore = applyMiddleware(promiseMiddleware)( createStore );
-
-// console.log( 'env: ', process.env.NODE_ENV )
-
-const app = express();
+const app = express()
 
 app.use('/assets', express.static(path.join(__dirname, '../client/assets')))
 
-// initialize webpack HMR
+// Initialize webpack HMR
 const webpack = require('webpack')
 const webpackDevMiddleware = require('webpack-dev-middleware')
 const webpackHotMiddleware = require('webpack-hot-middleware')
@@ -33,27 +24,24 @@ const compiler = webpack(config)
 app.use(webpackDevMiddleware(compiler, { noInfo: true, publicPath: config.output.publicPath }))
 app.use(webpackHotMiddleware(compiler))
 
-// server rendering
-app.use( ( req, res, next ) => {
+// Server side rendering
+app.use((req, res, next) => {
 
-	const store = finalCreateStore(combinedReducers);
+	const store = finalCreateStore(combinedReducers)
 
 	// react-router
-	match( {routes, location: req.url}, ( error, redirectLocation, renderProps ) => {
+	match({ routes, location: req.url }, (error, redirectLocation, renderProps) => {
 
-		if ( error )
-			return res.status(500).send( error.message );
+		if (error)
+			return res.status(500).send( error.message )
 
-		if ( redirectLocation )
-			return res.redirect( 302, redirectLocation.pathname + redirectLocation.search );
+		if (redirectLocation)
+			return res.redirect( 302, redirectLocation.pathname + redirectLocation.search )
 
-		if ( renderProps == null ) {
-			// return next('err msg: route not found'); // yield control to next middleware to handle the request
-			return res.status(404).send( 'Not found' );
+		if (renderProps == null) {
+			// return next('err msg: route not found') // yield control to next middleware to handle the request
+			return res.status(404).send( 'Not found' )
 		}
-
-		// console.log( '\nserver > renderProps: \n', require('util').inspect( renderProps, false, 1, true) )
-		// console.log( '\nserver > renderProps: \n', require('util').inspect( renderProps.components, false, 3, true) )
 
 		// this is where universal rendering happens,
 		// fetchComponentData() will trigger actions listed in static "needs" props in each container component
@@ -61,9 +49,9 @@ app.use( ( req, res, next ) => {
 		// hence ensuring all data needed was fetched before proceeding
 		//
 		// renderProps: contains all necessary data, e.g: routes, router, history, components...
-		fetchComponentData( store.dispatch, renderProps.components, renderProps.params)
+		fetchComponentData(store.dispatch, renderProps.components, renderProps.params)
 
-		.then( () => {
+		.then(() => {
 
 			const initView = renderToString((
 				<Provider store={store}>
@@ -71,21 +59,17 @@ app.use( ( req, res, next ) => {
 				</Provider>
 			))
 
-			// console.log('\ninitView:\n', initView);
+			let state = JSON.stringify(store.getState())
 
-			let state = JSON.stringify( store.getState() );
-			// console.log( '\nstate: ', state )
+			let page = renderFullPage(initView, state)
 
-			let page = renderFullPage( initView, state )
-			// console.log( '\npage:\n', page );
-
-			return page;
+			return page
 
 		})
 
-		.then( page => res.status(200).send(page) )
+		.then(page => res.status(200).send(page))
 
-		.catch( err => res.end(err.message) );
+		.catch(err => res.end(err.message))
 	})
 })
 
@@ -95,12 +79,11 @@ function renderFullPage(html, initialState) {
 	<!doctype html>
 	<html lang="utf-8">
 	  <head>
-		<title>Universal Redux Example</title>
+		<title>Universal Javascript App</title>
 		<link rel="shortcut icon" type="image/png" href="assets/images/react.png">
-		<link rel="stylesheet" href="/assets/css/uikit.almost-flat.min.css">
 	  </head>
 	  <body>
-	  <div class="container">${html}</div>
+	  <div id="universal-app">${html}</div>
 		<script>window.$REDUX_STATE = ${initialState}</script>
 		<script src="/static/bundle.js"></script>
 	  </body>
@@ -110,24 +93,22 @@ function renderFullPage(html, initialState) {
 
 // example of handling 404 pages
 app.get('*', function(req, res) {
-	res.status(404).send('Server.js > 404 - Page Not Found');
+	res.status(404).send('Server.js > 404 - Page Not Found')
 })
 
 // global error catcher, need four arguments
 app.use((err, req, res, next) => {
-  console.error("Error on request %s %s", req.method, req.url);
-  console.error(err.stack);
-  res.status(500).send("Server error");
-});
-
-process.on('uncaughtException', evt => {
-  console.log( 'uncaughtException: ', evt );
+  console.error("Error on request %s %s", req.method, req.url)
+  console.error(err.stack)
+  res.status(500).send("Server error")
 })
 
-var $PORT = process.env.PORT || 3000;
+process.on('uncaughtException', evt => {
+  console.log( 'uncaughtException: ', evt )
+})
+
+var $PORT = process.env.PORT || 3000
 
 app.listen($PORT, function(){
-	console.log('Listening on port ', $PORT);
-});
-
-
+	console.log('Listening on port ', $PORT)
+})
